@@ -366,6 +366,7 @@ func (c *Controller) initController() {
 		c.logger.Logger.Level = logrus.DebugLevel
 	}
 
+	//로그 출력
 	logMultiLineConfig(c.logger, c.opConfig.MustMarshal())
 
 	roleDefs := c.getInfrastructureRoleDefinitions()
@@ -385,7 +386,6 @@ func (c *Controller) initController() {
 			if !ok {
 				return "", fmt.Errorf("could not cast to ClusterEvent")
 			}
-
 			//문자열 반환
 			return queueClusterKey(e.EventType, e.UID), nil
 		})
@@ -403,6 +403,12 @@ func (c *Controller) initSharedInformers() {
 		constants.QueueResyncPeriodTPR,
 		cache.Indexers{})
 
+	// AddEventHandler adds an event handler to the shared informer using the shared informer's resync
+	// period.  Events to a single handler are delivered sequentially, but there is no coordination
+	// between different handlers.
+	//AddEventHandler는 공유 정보 제공자의 재동기화 기간을 사용하여 공유 정보 제공자에 이벤트 핸들러를 추가합니다.
+	//단일 핸들러에 대한 이벤트는 순차적으로 전달되지만 서로 다른 핸들러 사이에서 조정이 없습니다.
+	//EventHandler는 이벤트에 대한 응답으로 reconcile.Requests를 큐에 넣습니다(예: Pod Create). EventHandler는 이벤트를 매핑합니다.
 	c.postgresqlInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    c.postgresqlAdd,
 		UpdateFunc: c.postgresqlUpdate,
@@ -429,6 +435,7 @@ func (c *Controller) initSharedInformers() {
 		WatchFunc: c.podWatchFunc,
 	}
 
+	//NewSharedIndexInformer는 listwatcher에 대한 새 인스턴스를 만듭니다. 생성된 정보 제공자는 지정된 defaultEventHandlerResyncPeriod가 0인 경우 재동기화를 수행하지 않습니다.
 	c.podInformer = cache.NewSharedIndexInformer(
 		podLw,
 		&v1.Pod{},
