@@ -87,12 +87,14 @@ func main() {
 	log.SetOutput(os.Stdout)
 	log.Printf("Spilo operator %s\n", version)
 
-	sigs := make(chan os.Signal, 1)
+	//채널 설정
+	sigs := make(chan os.Signal, 1)                    // os.signal 타입을 전송할 수 있는 채널을 만든다.
 	stop := make(chan struct{})                        //채널 생성
 	signal.Notify(sigs, os.Interrupt, syscall.SIGTERM) // Push signals into channel
 	//syscall.SIGINT는 ctrl+c 에 대한 시그널이고 syscall.SIGTERM은 종료에 대한 시그널
 
 	wg := &sync.WaitGroup{} // Goroutines can add themselves to this to be waited on
+	//sync.WaitGroup은 모든 고루틴이 종료될 때까지 대기해야 할 때 사용
 
 	//RestConfig creates REST config
 	//kubernetes가 포드에 제공하는 서비스 계정을 사용하는 구성 개체를 반환

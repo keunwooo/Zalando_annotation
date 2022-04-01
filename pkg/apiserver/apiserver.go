@@ -103,6 +103,7 @@ func New(controller controllerInformer, port int, logger *logrus.Logger) *Server
 }
 
 // Run starts the HTTP server
+//이해 안감
 func (s *Server) Run(stopCh <-chan struct{}, wg *sync.WaitGroup) {
 
 	var err error

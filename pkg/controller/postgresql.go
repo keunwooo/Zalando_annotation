@@ -28,7 +28,9 @@ import (
 func (c *Controller) clusterResync(stopCh <-chan struct{}, wg *sync.WaitGroup) {
 	defer wg.Done()
 	ticker := time.NewTicker(c.opConfig.ResyncPeriod)
-
+	//NewTicker는 각 틱 후에 채널의 현재 시간을 보낼 채널이 포함된 새 Ticker를 반환합니다.
+	//틱의 기간은 duration 인수로 지정됩니다. 티커는 시간 간격을 조정하거나 느린 수신기를 보완하기 위해 틱을 삭제합니다.
+	//기간 d는 0보다 커야 합니다. 그렇지 않으면 NewTicker가 당황할 것입니다. 관련 리소스를 해제하려면 티커를 중지하세요.
 	for {
 		select {
 		case <-ticker.C:

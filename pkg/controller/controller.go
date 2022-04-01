@@ -458,7 +458,11 @@ func (c *Controller) Run(stopCh <-chan struct{}, wg *sync.WaitGroup) {
 	//StartRecordingToSink starts sending events received from the specified eventBroadcaster to the given sink.
 	c.initController()
 
+	//go 루틴
+	//일반 함수 앞에 go 라고 붙히기만 하면 경량 쓰레드로 동작
+
 	// start workers reading from the events queue to prevent the initial sync from blocking on it.
+	//초기 동기화가 차단되지 않도록 이벤트 대기열에서 작업자 읽기를 시작합니다.
 	for i := range c.clusterEventQueues {
 		wg.Add(1)
 		c.workerLogs[uint32(i)] = ringlog.New(c.opConfig.RingLogLines)
@@ -466,19 +470,21 @@ func (c *Controller) Run(stopCh <-chan struct{}, wg *sync.WaitGroup) {
 	}
 
 	// populate clusters before starting nodeInformer that relies on it and run the initial sync
+	//이에 의존하는 nodeInformer를 시작하기 전에 클러스터를 채우고 초기 동기화를 실행합니다.
 	if err := c.acquireInitialListOfClusters(); err != nil {
 		panic("could not acquire initial list of clusters")
 	}
 
-	//
+	//Informer 실행
 	wg.Add(5)
 	go c.runPodInformer(stopCh, wg)
 	go c.runPostgresqlInformer(stopCh, wg)
 	go c.clusterResync(stopCh, wg)
+	// Run starts the HTTP server
 	go c.apiserver.Run(stopCh, wg)
 	go c.kubeNodesInformer(stopCh, wg)
 
-	//
+	//EnablePostgresTeamCRD 가 설정되어 있다면 해당 informer도 실행
 	if c.opConfig.EnablePostgresTeamCRD {
 		go c.runPostgresTeamInformer(stopCh, wg)
 	}
@@ -489,19 +495,19 @@ func (c *Controller) Run(stopCh <-chan struct{}, wg *sync.WaitGroup) {
 
 func (c *Controller) runPodInformer(stopCh <-chan struct{}, wg *sync.WaitGroup) {
 	defer wg.Done()
-
+	//인터페이스에 Run을 새로 정의한거로 보임.
+	//Run은 Shared Informer를 시작 및 실행하고 중지 후 반환됩니다. stopCh가 닫히면 알림이 중지됩니다.
 	c.podInformer.Run(stopCh)
 }
 
 func (c *Controller) runPostgresqlInformer(stopCh <-chan struct{}, wg *sync.WaitGroup) {
 	defer wg.Done()
-
+	//Run은 Shared Informer를 시작 및 실행하고 중지 후 반환됩니다. stopCh가 닫히면 알림이 중지됩니다.
 	c.postgresqlInformer.Run(stopCh)
 }
 
 func (c *Controller) runPostgresTeamInformer(stopCh <-chan struct{}, wg *sync.WaitGroup) {
 	defer wg.Done()
-
 	c.postgresTeamInformer.Run(stopCh)
 }
 
