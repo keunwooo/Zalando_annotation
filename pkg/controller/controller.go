@@ -323,6 +323,8 @@ func (c *Controller) initController() {
 	//컨트롤러 ID 환경변수로부터 가져옴
 	c.controllerID = os.Getenv("CONTROLLER_ID")
 
+	//configObjectName이 있으면 사용 없으면 initOperatorConfig
+	//Operator CRD 생성
 	if configObjectName := os.Getenv("POSTGRES_OPERATOR_CONFIGURATION_OBJECT"); configObjectName != "" {
 		if c.opConfig.EnableCRDRegistration != nil && *c.opConfig.EnableCRDRegistration {
 			if err := c.createConfigurationCRD(); err != nil {
@@ -338,17 +340,21 @@ func (c *Controller) initController() {
 		c.initOperatorConfig()
 	}
 
+	//actual service accounts are deployed at the time of Postgres/Spilo cluster creation
 	c.initPodServiceAccount()
+	//
 	c.initRoleBinding()
-
+	//
 	c.modifyConfigFromEnvironment()
 
+	//Postgres CRD 생성
 	if c.opConfig.EnableCRDRegistration != nil && *c.opConfig.EnableCRDRegistration {
 		if err := c.createPostgresCRD(); err != nil {
 			c.logger.Fatalf("could not register Postgres CustomResourceDefinition: %v", err)
 		}
 	}
 
+	//각 인포머에 이벤트 핸들러 추가
 	c.initSharedInformers()
 
 	c.pgTeamMap = teams.PostgresTeamMap{}
@@ -369,8 +375,10 @@ func (c *Controller) initController() {
 		c.config.InfrastructureRoles = infraRoles
 	}
 
+	//이벤트 큐 생성
 	c.clusterEventQueues = make([]*cache.FIFO, c.opConfig.Workers)
 	c.workerLogs = make(map[uint32]ringlog.RingLogger, c.opConfig.Workers)
+	//이벤트 큐에 이벤트 할당
 	for i := range c.clusterEventQueues {
 		c.clusterEventQueues[i] = cache.NewFIFO(func(obj interface{}) (string, error) {
 			e, ok := obj.(ClusterEvent)
@@ -378,6 +386,7 @@ func (c *Controller) initController() {
 				return "", fmt.Errorf("could not cast to ClusterEvent")
 			}
 
+			//문자열 반환
 			return queueClusterKey(e.EventType, e.UID), nil
 		})
 	}
